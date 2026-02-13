@@ -29,6 +29,8 @@ const HOST_URL = process.env.AD_HOST_URL || 'http://localhost:3000';
 const GATEKEEPER_URL = process.env.AD_GATEKEEPER_URL || 'http://localhost:4224';
 const WALLET_URL = process.env.AD_WALLET_URL || 'http://localhost:4224';
 const AD_DATABASE_TYPE = process.env.AD_DATABASE || 'json';
+const IPFS_API_URL = process.env.AD_IPFS_API_URL || 'http://ipfs:5001/api/v0';
+const IPNS_KEY_NAME = process.env.AD_IPNS_KEY_NAME || 'self';
 
 const app = express();
 const logins: Record<string, {
@@ -454,6 +456,74 @@ app.get('/api/admin', isAdmin, async (_: Request, res: Response) => {
     catch (error) {
         console.log(error);
         res.status(500).send(String(error));
+    }
+});
+
+// Publish registry to IPFS and update IPNS
+app.post('/api/admin/publish', isAdmin, async (_: Request, res: Response) => {
+    try {
+        // Build registry from DB
+        const currentDb = db.loadDb();
+        const names: Record<string, string> = {};
+
+        if (currentDb.users) {
+            for (const [did, user] of Object.entries(currentDb.users)) {
+                if (user.name) {
+                    names[user.name] = did;
+                }
+            }
+        }
+
+        const registry = {
+            version: 1,
+            updated: new Date().toISOString(),
+            names
+        };
+
+        const registryJson = JSON.stringify(registry, null, 2);
+
+        // Add to IPFS
+        const formData = new FormData();
+        formData.append('file', new Blob([registryJson], { type: 'application/json' }), 'registry.json');
+
+        const addResponse = await fetch(`${IPFS_API_URL}/add?pin=true`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!addResponse.ok) {
+            throw new Error(`IPFS add failed: ${addResponse.statusText}`);
+        }
+
+        const addResult = await addResponse.json();
+        const cid = addResult.Hash;
+
+        console.log(`Registry added to IPFS: ${cid}`);
+
+        // Publish to IPNS
+        const publishResponse = await fetch(
+            `${IPFS_API_URL}/name/publish?arg=/ipfs/${cid}&key=${IPNS_KEY_NAME}`,
+            { method: 'POST' }
+        );
+
+        if (!publishResponse.ok) {
+            throw new Error(`IPNS publish failed: ${publishResponse.statusText}`);
+        }
+
+        const publishResult = await publishResponse.json();
+
+        console.log(`Registry published to IPNS: ${publishResult.Name}`);
+
+        res.json({
+            ok: true,
+            cid,
+            ipns: publishResult.Name,
+            registry
+        });
+    }
+    catch (error: any) {
+        console.log(error);
+        res.status(500).json({ ok: false, error: error.message || String(error) });
     }
 });
 
