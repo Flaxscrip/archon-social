@@ -895,7 +895,8 @@ app.get('/api/credential', isAuthenticated, async (req: Request, res: Response) 
     }
     catch (error: any) {
         console.log(error);
-        res.status(500).json({ error: error.message || String(error) });
+        const errorMsg = error?.message || error?.error || (typeof error === 'string' ? error : JSON.stringify(error));
+        res.status(500).json({ error: errorMsg });
     }
 });
 
@@ -970,7 +971,8 @@ app.post('/api/credential/request', isAuthenticated, async (req: Request, res: R
     }
     catch (error: any) {
         console.log(error);
-        res.status(500).json({ error: error.message || String(error) });
+        const errorMsg = error?.message || error?.error || (typeof error === 'string' ? error : JSON.stringify(error));
+        res.status(500).json({ error: errorMsg });
     }
 });
 
