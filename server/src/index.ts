@@ -924,23 +924,26 @@ app.post('/api/credential/request', isAuthenticated, async (req: Request, res: R
 
         // Switch to owner identity to issue credential
         await keymaster.setCurrentId(roles.owner);
-
-        // Build the credential - issuer is set automatically from current identity
-        const vc: any = {
-            "@context": ["https://www.w3.org/2018/credentials/v1"],
-            type: ['VerifiableCredential', 'ArchonSocialNameCredential'],
-            credentialSubject: {
-                id: userDid,
-                name: `@${user.name}`,
-                platform: 'archon.social',
-                registeredAt: user.firstLogin
-            }
-        };
+        console.log(`Issuing credential as ${roles.owner} (${ownerDID})`);
+        console.log(`User has existing credential: ${!!user.credentialDid}`);
 
         let credentialDid: string;
 
         if (user.credentialDid) {
-            // Update existing credential
+            // Update existing credential - need full VC with issuer
+            const vc: any = {
+                "@context": ["https://www.w3.org/2018/credentials/v1"],
+                type: ['VerifiableCredential', 'ArchonSocialNameCredential'],
+                issuer: ownerDID,
+                validFrom: new Date().toISOString(),
+                credentialSubject: {
+                    id: userDid,
+                    name: `@${user.name}`,
+                    platform: 'archon.social',
+                    registeredAt: user.firstLogin
+                }
+            };
+            console.log(`Updating credential ${user.credentialDid}...`);
             const updated = await keymaster.updateCredential(user.credentialDid, vc);
             if (!updated) {
                 throw new Error('Failed to update credential');
@@ -948,8 +951,20 @@ app.post('/api/credential/request', isAuthenticated, async (req: Request, res: R
             credentialDid = user.credentialDid;
             console.log(`Updated credential ${credentialDid} for ${user.name}`);
         } else {
-            // Issue new credential
-            credentialDid = await keymaster.issueCredential(vc, { subject: userDid });
+            // Issue new credential - use options API
+            console.log(`Issuing new credential for ${userDid}...`);
+            credentialDid = await keymaster.issueCredential({
+                "@context": ["https://www.w3.org/2018/credentials/v1"],
+                type: ['VerifiableCredential', 'ArchonSocialNameCredential'],
+            }, { 
+                subject: userDid,
+                validFrom: new Date().toISOString(),
+                claims: {
+                    name: `@${user.name}`,
+                    platform: 'archon.social',
+                    registeredAt: user.firstLogin
+                }
+            });
             console.log(`Issued new credential ${credentialDid} for ${user.name}`);
         }
 
