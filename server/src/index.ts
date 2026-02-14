@@ -923,17 +923,19 @@ app.post('/api/credential/request', isAuthenticated, async (req: Request, res: R
         // Switch to owner identity to issue credential
         await keymaster.setCurrentId(roles.owner);
 
-        // Create the credential
-        const vc = await keymaster.bindCredential(userDid, {
-            claims: {
+        // Build the credential
+        const vc: any = {
+            "@context": ["https://www.w3.org/2018/credentials/v1"],
+            type: ['VerifiableCredential', 'ArchonSocialNameCredential'],
+            credentialSubject: {
+                id: userDid,
+            },
+            credential: {
                 name: `@${user.name}`,
                 platform: 'archon.social',
                 registeredAt: user.firstLogin
             }
-        });
-
-        // Add custom type
-        vc.type = ['VerifiableCredential', 'ArchonSocialNameCredential'];
+        };
 
         let credentialDid: string;
 
@@ -947,7 +949,7 @@ app.post('/api/credential/request', isAuthenticated, async (req: Request, res: R
             console.log(`Updated credential ${credentialDid} for ${user.name}`);
         } else {
             // Issue new credential
-            credentialDid = await keymaster.issueCredential(vc);
+            credentialDid = await keymaster.issueCredential(vc, { subject: userDid });
             console.log(`Issued new credential ${credentialDid} for ${user.name}`);
         }
 
