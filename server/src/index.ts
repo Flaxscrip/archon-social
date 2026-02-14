@@ -81,35 +81,38 @@ async function verifyRoles(): Promise<void> {
 
     // Resolve or create Admin group
     try {
-        const docs = await keymaster.resolveDID(roles.admin);
-        roleDIDs.admin = docs.didDocument?.id!;
+        roleDIDs.admin = await keymaster.lookupDID(roles.admin);
         console.log(`${roles.admin}: ${roleDIDs.admin}`);
     }
     catch (error) {
         console.log(`Creating group ${roles.admin}`);
         roleDIDs.admin = await keymaster.createGroup(roles.admin);
+        await keymaster.addAlias(roles.admin, roleDIDs.admin);
+        console.log(`Registered alias ${roles.admin} -> ${roleDIDs.admin}`);
     }
 
     // Resolve or create Moderator group
     try {
-        const docs = await keymaster.resolveDID(roles.moderator);
-        roleDIDs.moderator = docs.didDocument?.id!;
+        roleDIDs.moderator = await keymaster.lookupDID(roles.moderator);
         console.log(`${roles.moderator}: ${roleDIDs.moderator}`);
     }
     catch (error) {
         console.log(`Creating group ${roles.moderator}`);
         roleDIDs.moderator = await keymaster.createGroup(roles.moderator);
+        await keymaster.addAlias(roles.moderator, roleDIDs.moderator);
+        console.log(`Registered alias ${roles.moderator} -> ${roleDIDs.moderator}`);
     }
 
     // Resolve or create Member group
     try {
-        const docs = await keymaster.resolveDID(roles.member);
-        roleDIDs.member = docs.didDocument?.id!;
+        roleDIDs.member = await keymaster.lookupDID(roles.member);
         console.log(`${roles.member}: ${roleDIDs.member}`);
     }
     catch (error) {
         console.log(`Creating group ${roles.member}`);
         roleDIDs.member = await keymaster.createGroup(roles.member);
+        await keymaster.addAlias(roles.member, roleDIDs.member);
+        console.log(`Registered alias ${roles.member} -> ${roleDIDs.member}`);
     }
 
     // Ensure hierarchy is set up (idempotent - won't duplicate if already exists)
