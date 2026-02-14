@@ -80,11 +80,11 @@ async function verifyRoles(): Promise<void> {
     await keymaster.setCurrentId(roles.owner);
 
     // Resolve or create Admin group
-    try {
-        roleDIDs.admin = await keymaster.lookupDID(roles.admin);
+    const existingAdmin = await keymaster.getAlias(roles.admin);
+    if (existingAdmin) {
+        roleDIDs.admin = existingAdmin;
         console.log(`${roles.admin}: ${roleDIDs.admin}`);
-    }
-    catch (error) {
+    } else {
         console.log(`Creating group ${roles.admin}`);
         roleDIDs.admin = await keymaster.createGroup(roles.admin);
         await keymaster.addAlias(roles.admin, roleDIDs.admin);
@@ -92,11 +92,11 @@ async function verifyRoles(): Promise<void> {
     }
 
     // Resolve or create Moderator group
-    try {
-        roleDIDs.moderator = await keymaster.lookupDID(roles.moderator);
+    const existingModerator = await keymaster.getAlias(roles.moderator);
+    if (existingModerator) {
+        roleDIDs.moderator = existingModerator;
         console.log(`${roles.moderator}: ${roleDIDs.moderator}`);
-    }
-    catch (error) {
+    } else {
         console.log(`Creating group ${roles.moderator}`);
         roleDIDs.moderator = await keymaster.createGroup(roles.moderator);
         await keymaster.addAlias(roles.moderator, roleDIDs.moderator);
@@ -104,11 +104,11 @@ async function verifyRoles(): Promise<void> {
     }
 
     // Resolve or create Member group
-    try {
-        roleDIDs.member = await keymaster.lookupDID(roles.member);
+    const existingMember = await keymaster.getAlias(roles.member);
+    if (existingMember) {
+        roleDIDs.member = existingMember;
         console.log(`${roles.member}: ${roleDIDs.member}`);
-    }
-    catch (error) {
+    } else {
         console.log(`Creating group ${roles.member}`);
         roleDIDs.member = await keymaster.createGroup(roles.member);
         await keymaster.addAlias(roles.member, roleDIDs.member);
