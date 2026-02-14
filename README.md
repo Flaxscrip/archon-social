@@ -1,10 +1,20 @@
-# MDIP Auth Demo
+# Archon.Social
 
 ### Overview
-This repository hosts a simple authentication demo using MDIP. It is split into two main folders:
+Archon.Social is a decentralized naming service built on Archon Protocol. Users can claim `@name` handles, prove DID ownership, and receive verifiable credentials.
+
+This repository is split into two main folders:
 
 - **client/** – A React front-end
 - **server/** – An Express/Node back-end
+
+### Features
+
+- **Decentralized Identity** – Login with your DID using challenge-response authentication
+- **Name Registration** – Claim your `@name` handle (3-32 characters, alphanumeric + hyphens/underscores)
+- **Verifiable Credentials** – Receive credentials proving your name ownership, signed by Archon.Social
+- **Member Directory** – Browse registered members and view their DID documents
+- **IPNS Publication** – Registry published to IPFS for decentralized resolution
 
 ### Running the Demo
 
@@ -18,7 +28,7 @@ You can run the demo in two ways:
 - **client/**  
   A React front-end, with a `.env` controlling its API endpoint and HTTPS dev settings.
 - **server/**  
-  An Express server that provides `/api` endpoints, using Keymaster for DID-based authentication. Has a .env to set keymaster, Gatekeeper, callback, whether to serve the React client, HTTPS dev settings and CORS for external React app.
+  An Express server that provides `/api` endpoints, using Keymaster for DID-based authentication.
 
 ### Quick Start
 
@@ -29,37 +39,30 @@ You can run the demo in two ways:
   - `npm start`  
 
 3. **Visit** the site in a browser:
-  - If you’re serving the client from the server, go to `http://localhost:3000`.
+  - If you're serving the client from the server, go to `http://localhost:3000`.
 
-### QR code integration
-
-![login page](login.png)
+### QR Code Authentication
 
 The QR code encodes a URL that includes the challenge DID as a query parameter:
 
-`https://wallet.mdip.yourself.dev?challenge=did:test:z3v8Auak6KesbV1nnMz1XUUMoZcuW4GBKygWNnKHHAQU3N9sDDz`
+`https://wallet.archon.technology?challenge=did:cid:...`
 
 The wallet URL is specified in an environment variable `AD_WALLET_URL` included in a `.env` file.
 
-The challenge is created with a callback specified in the `AD_CALLBACK_URL` environment variable. This should point to the location where the auth-demo is deployed.
-
-See `sample.env` for example values.
-
-An MDIP wallet installed on a mobile device can scan the QR code and extract the challenge DID from the URL, ignoring the wallet URL preceding the challenge.
-
+An Archon wallet installed on a mobile device can scan the QR code and extract the challenge DID from the URL.
 
 The API offers two ways to submit a response to the challenge, GET and POST.
 
-The GET method uses a query parameters for the `response`, e.g.
+The GET method uses a query parameter for the `response`:
 
 ```
-curl https://auth-demo-server:3000/api/login?response=did:test:z3v8AuaUENXcWUdHKpJqozSLyjHg8pjGF7Dd5H8GnKaeLgDuTcG
+curl https://archon.social/api/login?response=did:cid:...
 ```
 
-The POST method takes the same parameter in the body of the request:
+The POST method takes the same parameter in the body:
 
 ```
-curl -X POST -H "Content-Type: application/json" -d '{"response":"did:test:z3v8AuaUENXcWUdHKpJqozSLyjHg8pjGF7Dd5H8GnKaeLgDuTcG"}' https://localhost:3000/api/login
+curl -X POST -H "Content-Type: application/json" -d '{"response":"did:cid:..."}' https://archon.social/api/login
 ```
 
 Both login methods return a JSON object indicating whether the login was successful:
@@ -67,12 +70,18 @@ Both login methods return a JSON object indicating whether the login was success
 { authenticated: [ true | false ] }
 ```
 
-## Authentication Sequence Diagram
+### Environment Variables
 
-The diagram below details the MDIP Authentication process of a user Alice accessing a 3rd Party Website and authenticating herself using a smart-phone wallet to scan the Challenge QR code from the Website's login page. The diagram demonstrates the 3rd Party Website operator using a hosted Node-as-a-Service MDIP gatekeeper infrastructure provider.
-
-![MDIP_Auth_Seq](https://github.com/user-attachments/assets/064d1fbf-1d96-4284-b739-bd17e78d159b)
+See `sample.env` for example values including:
+- `AD_WALLET_URL` – Wallet URL for QR codes
+- `AD_CALLBACK_URL` – Callback URL for authentication
+- `AD_GATEKEEPER_URL` – Gatekeeper API endpoint
+- `AD_IPFS_API_URL` – IPFS API for registry publication
+- `AD_IPNS_KEY_NAME` – IPNS key for publishing
 
 ### Further Reading
 - **client/README.md** – Explains how to run the React client independently.
 - **server/README.md** – Explains how to run the auth server independently.
+
+### License
+MIT

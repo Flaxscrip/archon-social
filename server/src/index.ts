@@ -52,7 +52,7 @@ app.use(express.json());
 
 // Session setup
 app.use(session({
-    secret: 'MDIP',
+    secret: 'archon-social',
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false } // Set to true if using HTTPS

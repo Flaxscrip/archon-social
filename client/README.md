@@ -1,7 +1,7 @@
-# Auth Demo – Client (React)
+# Archon.Social – Client (React)
 
 ### Overview
-This folder contains a React client project for the MDIP Auth Demo’s front-end. It shows login flows, routes for profile pages, and so on.
+This folder contains the React front-end for Archon.Social. It provides login flows, profile management, name registration, credential viewing, and a member directory.
 
 ### Local Development
 
@@ -23,4 +23,11 @@ This folder contains a React client project for the MDIP Auth Demo’s front-end
 2. Serve those files from your hosting solution.
 
 ### Running with the Server
-If you set the environment variable `AD_SERVE_CLIENT=true` in the server’s .env, and then build this client (`npm run build`), the server can serve these static files. Access the app at the server's URL (e.g. `http://localhost:3000`).
+If you set the environment variable `AD_SERVE_CLIENT=true` in the server's .env, and then build this client (`npm run build`), the server can serve these static files. Access the app at the server's URL (e.g. `http://localhost:3000`).
+
+### Features
+- **QR Code Login** – Scan with Archon wallet to authenticate
+- **Profile Management** – Set your @name handle
+- **Credential Viewer** – View and download your verifiable credential
+- **Member Directory** – Browse all registered members
+- **DID Document Viewer** – View any member's DID document

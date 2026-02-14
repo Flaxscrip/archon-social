@@ -287,7 +287,7 @@ function ViewLogin() {
                 const response = await api.get(`/challenge`);
                 const { challenge, challengeURL } = response.data;
                 setChallengeDID(challenge);
-                setExtensionURL(`mdip://auth?challenge=${challenge}`);
+                setExtensionURL(`archon://auth?challenge=${challenge}`);
                 setChallengeURL(encodeURI(challengeURL));
             }
             catch (error: any) {
