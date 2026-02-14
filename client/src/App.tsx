@@ -48,6 +48,7 @@ function App() {
                 <Route path="/owner" element={<ViewOwner />} />
                 <Route path="/profile/:did" element={<ViewProfile />} />
                 <Route path="/member/:name" element={<ViewMember />} />
+                <Route path="/credential" element={<ViewCredential />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
         </Router>
@@ -168,6 +169,9 @@ function Home() {
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center', mb: 3 }}>
                         <Button component={Link} to={`/profile/${userDID}`} variant="outlined" size="small">
                             My Profile
+                        </Button>
+                        <Button component={Link} to='/credential' variant="outlined" size="small" color="success">
+                            My Credential
                         </Button>
                         {auth.isMember &&
                             <Button component={Link} to='/members' variant="outlined" size="small">
@@ -799,6 +803,208 @@ function ViewProfile() {
             </Table>
         </div>
     )
+}
+
+function ViewCredential() {
+    const [credentialData, setCredentialData] = useState<any>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [requesting, setRequesting] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
+    const navigate = useNavigate();
+
+    const fetchCredential = async () => {
+        try {
+            const response = await api.get('/credential');
+            setCredentialData(response.data);
+        }
+        catch (err: any) {
+            if (err.response?.status === 401) {
+                navigate('/login');
+            } else {
+                setError(err.response?.data?.error || 'Failed to fetch credential');
+            }
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCredential();
+    }, []);
+
+    const requestCredential = async () => {
+        setRequesting(true);
+        setError('');
+        try {
+            const response = await api.post('/credential/request');
+            setCredentialData({
+                hasCredential: true,
+                ...response.data
+            });
+        }
+        catch (err: any) {
+            setError(err.response?.data?.error || 'Failed to request credential');
+        }
+        finally {
+            setRequesting(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="App">
+                <Header title="My Credential" />
+                <p>Loading...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="App">
+            <Header title="My Credential" />
+            
+            <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+                {error && (
+                    <Box sx={{ 
+                        backgroundColor: '#fee', 
+                        border: '1px solid #fcc', 
+                        borderRadius: 2, 
+                        p: 2, 
+                        mb: 3 
+                    }}>
+                        <Typography color="error">{error}</Typography>
+                    </Box>
+                )}
+
+                {!credentialData?.hasCredential ? (
+                    <Box sx={{ 
+                        backgroundColor: '#f8f9fa', 
+                        borderRadius: 2, 
+                        p: 4, 
+                        textAlign: 'center',
+                        border: '1px solid #e9ecef'
+                    }}>
+                        <Typography variant="h5" sx={{ mb: 2, color: '#2c3e50' }}>
+                            Get Your Verified Name Credential
+                        </Typography>
+                        <Typography variant="body1" sx={{ mb: 3, color: '#666' }}>
+                            Request a verifiable credential from Archon.Social that proves you own your @name.
+                            <br />
+                            This credential is signed by Archon.Social and can be verified by anyone.
+                        </Typography>
+                        
+                        {credentialData?.name ? (
+                            <Button 
+                                variant="contained" 
+                                color="primary" 
+                                onClick={requestCredential}
+                                disabled={requesting}
+                                size="large"
+                            >
+                                {requesting ? 'Requesting...' : `Request Credential for @${credentialData.name}`}
+                            </Button>
+                        ) : (
+                            <Box>
+                                <Typography variant="body1" sx={{ color: '#e74c3c', mb: 2 }}>
+                                    You need to set a name first before requesting a credential.
+                                </Typography>
+                                <Button component={Link} to={`/profile/${credentialData?.did || ''}`} variant="outlined">
+                                    Go to Profile
+                                </Button>
+                            </Box>
+                        )}
+                    </Box>
+                ) : (
+                    <Box>
+                        <Box sx={{ 
+                            backgroundColor: '#e8f5e9', 
+                            borderRadius: 2, 
+                            p: 3, 
+                            mb: 3,
+                            border: '1px solid #c8e6c9',
+                            textAlign: 'center'
+                        }}>
+                            <Typography variant="h5" sx={{ color: '#2e7d32', mb: 1 }}>
+                                ✓ Verified Name Credential
+                            </Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 600, color: '#1b5e20' }}>
+                                @{credentialData.credentialName}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#666', mt: 1 }}>
+                                Issued: {credentialData.credentialIssuedAt ? 
+                                    format(new Date(credentialData.credentialIssuedAt), 'MMM d, yyyy h:mm a') : 
+                                    'Unknown'}
+                            </Typography>
+                        </Box>
+
+                        {credentialData.needsUpdate && (
+                            <Box sx={{ 
+                                backgroundColor: '#fff3e0', 
+                                borderRadius: 2, 
+                                p: 2, 
+                                mb: 3,
+                                border: '1px solid #ffe0b2'
+                            }}>
+                                <Typography variant="body1" sx={{ color: '#e65100' }}>
+                                    ⚠️ Your name has changed to @{credentialData.currentName}. 
+                                    Update your credential to reflect your new name.
+                                </Typography>
+                                <Button 
+                                    variant="contained" 
+                                    color="warning" 
+                                    onClick={requestCredential}
+                                    disabled={requesting}
+                                    sx={{ mt: 2 }}
+                                >
+                                    {requesting ? 'Updating...' : 'Update Credential'}
+                                </Button>
+                            </Box>
+                        )}
+
+                        <Typography variant="h6" sx={{ mb: 2 }}>Credential DID</Typography>
+                        <Typography 
+                            variant="body2" 
+                            sx={{ 
+                                fontFamily: 'monospace', 
+                                backgroundColor: '#f5f5f5', 
+                                p: 2, 
+                                borderRadius: 1,
+                                wordBreak: 'break-all',
+                                mb: 3
+                            }}
+                        >
+                            {credentialData.credentialDid}
+                        </Typography>
+
+                        <Typography variant="h6" sx={{ mb: 2 }}>Verifiable Credential</Typography>
+                        <Box sx={{ 
+                            backgroundColor: '#1e1e1e', 
+                            borderRadius: 2, 
+                            p: 2,
+                            overflow: 'auto',
+                            maxHeight: 400
+                        }}>
+                            <pre style={{ 
+                                color: '#d4d4d4', 
+                                margin: 0, 
+                                fontSize: '0.8rem',
+                                fontFamily: 'Monaco, Consolas, monospace'
+                            }}>
+                                {JSON.stringify(credentialData.credential, null, 2)}
+                            </pre>
+                        </Box>
+                    </Box>
+                )}
+
+                <Box sx={{ mt: 3, textAlign: 'center' }}>
+                    <Button component={Link} to="/" variant="text">
+                        ← Back to Home
+                    </Button>
+                </Box>
+            </Box>
+        </div>
+    );
 }
 
 function ViewMember() {

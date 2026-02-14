@@ -4,6 +4,9 @@ export interface User {
     logins?: number;
     role?: string;
     name?: string;
+    credentialDid?: string;
+    credentialName?: string;  // The name at time of credential issuance
+    credentialIssuedAt?: string;
     [key: string]: any;
 }
 

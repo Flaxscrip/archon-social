@@ -823,6 +823,126 @@ app.put('/api/profile/:did/role', isAdmin, async (req: Request, res: Response) =
     }
 });
 
+// Get member's credential
+app.get('/api/credential', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+        const userDid = req.session.user?.did;
+        if (!userDid) {
+            res.status(401).json({ error: 'Not authenticated' });
+            return;
+        }
+
+        const currentDb = db.loadDb();
+        const user = currentDb.users?.[userDid];
+
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+
+        if (!user.credentialDid) {
+            res.json({ 
+                hasCredential: false,
+                name: user.name || null,
+                message: 'No credential issued yet'
+            });
+            return;
+        }
+
+        // Fetch the credential
+        const credential = await keymaster.getCredential(user.credentialDid);
+
+        res.json({
+            hasCredential: true,
+            credentialDid: user.credentialDid,
+            credentialName: user.credentialName,
+            credentialIssuedAt: user.credentialIssuedAt,
+            currentName: user.name,
+            needsUpdate: user.name !== user.credentialName,
+            credential
+        });
+    }
+    catch (error: any) {
+        console.log(error);
+        res.status(500).json({ error: error.message || String(error) });
+    }
+});
+
+// Request/update credential
+app.post('/api/credential/request', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+        const userDid = req.session.user?.did;
+        if (!userDid) {
+            res.status(401).json({ error: 'Not authenticated' });
+            return;
+        }
+
+        const currentDb = db.loadDb();
+        const user = currentDb.users?.[userDid];
+
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+
+        if (!user.name) {
+            res.status(400).json({ error: 'You must set a name before requesting a credential' });
+            return;
+        }
+
+        // Switch to owner identity to issue credential
+        await keymaster.setCurrentId(roles.owner);
+
+        // Create the credential
+        const vc = await keymaster.bindCredential(userDid, {
+            claims: {
+                name: `@${user.name}`,
+                platform: 'archon.social',
+                registeredAt: user.firstLogin
+            }
+        });
+
+        // Add custom type
+        vc.type = ['VerifiableCredential', 'ArchonSocialNameCredential'];
+
+        let credentialDid: string;
+
+        if (user.credentialDid) {
+            // Update existing credential
+            const updated = await keymaster.updateCredential(user.credentialDid, vc);
+            if (!updated) {
+                throw new Error('Failed to update credential');
+            }
+            credentialDid = user.credentialDid;
+            console.log(`Updated credential ${credentialDid} for ${user.name}`);
+        } else {
+            // Issue new credential
+            credentialDid = await keymaster.issueCredential(vc);
+            console.log(`Issued new credential ${credentialDid} for ${user.name}`);
+        }
+
+        // Update user record
+        currentDb.users![userDid].credentialDid = credentialDid;
+        currentDb.users![userDid].credentialName = user.name;
+        currentDb.users![userDid].credentialIssuedAt = new Date().toISOString();
+        db.writeDb(currentDb);
+
+        // Fetch the issued credential to return
+        const credential = await keymaster.getCredential(credentialDid);
+
+        res.json({
+            ok: true,
+            credentialDid,
+            credential,
+            message: user.credentialDid ? 'Credential updated' : 'Credential issued'
+        });
+    }
+    catch (error: any) {
+        console.log(error);
+        res.status(500).json({ error: error.message || String(error) });
+    }
+});
+
 if (process.env.AD_SERVE_CLIENT !== 'false') {
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const clientBuildPath = path.join(__dirname, '../../client/build');
