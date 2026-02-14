@@ -156,6 +156,8 @@ async function setRole(user: string, role: string): Promise<string | null> {
         return currentRole;
     }
 
+    // Must be owner to modify groups
+    await keymaster.setCurrentId(roles.owner);
     console.log(`Changing role for ${user} from ${currentRole} to ${role}`);
 
     // Remove from current group
@@ -196,6 +198,7 @@ async function setRole(user: string, role: string): Promise<string | null> {
 }
 
 async function addMember(userDID: string): Promise<string | null> {
+    await keymaster.setCurrentId(roles.owner);
     await keymaster.addGroupMember(roleDIDs.member, userDID);
     return await getRole(userDID);
 }
