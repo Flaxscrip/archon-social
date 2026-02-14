@@ -79,6 +79,7 @@ async function verifyRoles(): Promise<void> {
 
     await keymaster.setCurrentId(roles.owner);
 
+    // Resolve or create Admin group
     try {
         const docs = await keymaster.resolveDID(roles.admin);
         roleDIDs.admin = docs.didDocument?.id!;
@@ -87,9 +88,9 @@ async function verifyRoles(): Promise<void> {
     catch (error) {
         console.log(`Creating group ${roles.admin}`);
         roleDIDs.admin = await keymaster.createGroup(roles.admin);
-        await keymaster.addGroupMember(roleDIDs.admin, ownerDID);
     }
 
+    // Resolve or create Moderator group
     try {
         const docs = await keymaster.resolveDID(roles.moderator);
         roleDIDs.moderator = docs.didDocument?.id!;
@@ -98,9 +99,9 @@ async function verifyRoles(): Promise<void> {
     catch (error) {
         console.log(`Creating group ${roles.moderator}`);
         roleDIDs.moderator = await keymaster.createGroup(roles.moderator);
-        await keymaster.addGroupMember(roleDIDs.moderator, roleDIDs.admin);
     }
 
+    // Resolve or create Member group
     try {
         const docs = await keymaster.resolveDID(roles.member);
         roleDIDs.member = docs.didDocument?.id!;
@@ -109,8 +110,33 @@ async function verifyRoles(): Promise<void> {
     catch (error) {
         console.log(`Creating group ${roles.member}`);
         roleDIDs.member = await keymaster.createGroup(roles.member);
+    }
+
+    // Ensure hierarchy is set up (idempotent - won't duplicate if already exists)
+    // Admin group contains Owner
+    // Moderator group contains Admin group (Admins are implicitly Moderators)
+    // Member group contains Moderator group (Moderators are implicitly Members)
+    console.log('Verifying group hierarchy...');
+    
+    const ownerInAdmin = await keymaster.testGroup(roleDIDs.admin, ownerDID);
+    if (!ownerInAdmin) {
+        console.log(`Adding owner to admin group...`);
+        await keymaster.addGroupMember(roleDIDs.admin, ownerDID);
+    }
+
+    const adminInModerator = await keymaster.testGroup(roleDIDs.moderator, roleDIDs.admin);
+    if (!adminInModerator) {
+        console.log(`Adding admin group to moderator group...`);
+        await keymaster.addGroupMember(roleDIDs.moderator, roleDIDs.admin);
+    }
+
+    const moderatorInMember = await keymaster.testGroup(roleDIDs.member, roleDIDs.moderator);
+    if (!moderatorInMember) {
+        console.log(`Adding moderator group to member group...`);
         await keymaster.addGroupMember(roleDIDs.member, roleDIDs.moderator);
     }
+
+    console.log('Group hierarchy verified.');
 
     if (currentId) {
         await keymaster.setCurrentId(currentId);
