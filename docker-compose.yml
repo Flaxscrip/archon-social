@@ -15,6 +15,8 @@ services:
       - AD_IPFS_API_URL=${AD_IPFS_API_URL:-http://archon-ipfs-1:5001/api/v0}
       - AD_IPNS_KEY_NAME=${AD_IPNS_KEY_NAME:-archon-social}
       - ARCHON_ADMIN_API_KEY=${ARCHON_ADMIN_API_KEY}
+      - ARCHON_PASSPHRASE=${AD_WALLET_PASSPHRASE}
+      - ARCHON_GATEKEEPER_URL=http://archon-gatekeeper-1:4224
     volumes:
       - ./server/data:/app/server/data
     ports:
