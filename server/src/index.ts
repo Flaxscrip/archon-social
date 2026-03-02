@@ -33,6 +33,7 @@ const AD_DATABASE_TYPE = process.env.AD_DATABASE || 'json';
 const IPFS_API_URL = process.env.AD_IPFS_API_URL || 'http://ipfs:5001/api/v0';
 const IPNS_KEY_NAME = process.env.AD_IPNS_KEY_NAME || 'self';
 const ADMIN_API_KEY = process.env.ARCHON_ADMIN_API_KEY || '';
+const MEMBERSHIP_SCHEMA_DID = process.env.AD_MEMBERSHIP_SCHEMA_DID || 'did:cid:bagaaiera6arptfgfleekvmssqok36mnxuun6newsz7fzwpd5szujnh2kc75a';
 
 const app = express();
 const logins: Record<string, {
@@ -1054,17 +1055,14 @@ app.post('/api/credential/request', isAuthenticated, async (req: Request, res: R
             credentialDid = user.credentialDid;
             console.log(`Updated credential ${credentialDid} for ${user.name}`);
         } else {
-            // Issue new credential using bindCredential then issueCredential
-            console.log(`Binding new credential for ${userDid}...`);
-            const boundCredential = await keymaster.bindCredential(userDid, {
-                validFrom: new Date().toISOString(),
-                claims: {
-                    name: `@${user.name}`,
-                    platform: 'archon.social',
-                    registeredAt: user.firstLogin,
-                    credentialType: 'ArchonSocialNameCredential'
-                }
-            });
+            // Issue new credential using schema + bindCredential then issueCredential
+            console.log(`Binding new credential for ${userDid} using schema ${MEMBERSHIP_SCHEMA_DID}...`);
+            const boundCredential = await keymaster.bindCredential(MEMBERSHIP_SCHEMA_DID, userDid);
+            
+            // Fill in the schema properties
+            boundCredential.credential.credentialSubject.memberName = `@${user.name}`;
+            boundCredential.validFrom = new Date().toISOString();
+            
             console.log(`Bound credential, now issuing...`);
             
             // Issue the bound credential to get a DID
