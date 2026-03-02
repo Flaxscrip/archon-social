@@ -1057,12 +1057,13 @@ app.post('/api/credential/request', isAuthenticated, async (req: Request, res: R
         } else {
             // Issue new credential using schema + bindCredential then issueCredential
             console.log(`Binding new credential for ${userDid} using schema ${MEMBERSHIP_SCHEMA_DID}...`);
-            const boundCredential = await keymaster.bindCredential(MEMBERSHIP_SCHEMA_DID, userDid);
-            
-            // Fill in the schema properties
-            boundCredential.credential.credentialSubject.memberName = `@${user.name}`;
-            boundCredential.validFrom = new Date().toISOString();
-            
+            const boundCredential = await keymaster.bindCredential(userDid, {
+                schema: MEMBERSHIP_SCHEMA_DID,
+                validFrom: new Date().toISOString(),
+                claims: {
+                    memberName: `@${user.name}`
+                }
+            });
             console.log(`Bound credential, now issuing...`);
             
             // Issue the bound credential to get a DID
