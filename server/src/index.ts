@@ -1192,6 +1192,14 @@ app.listen(HOST_PORT, '0.0.0.0', async () => {
         console.log(`auth-demo using gatekeeper at ${GATEKEEPER_URL}`);
     }
 
+    // Ensure keymaster is using the archon.social identity
+    try {
+        await keymaster.setCurrentId('archon.social');
+        console.log('Set current identity to archon.social');
+    } catch (e: any) {
+        console.error('Failed to set current identity:', e?.message || e);
+    }
+    
     await verifyRoles();
     await verifyDb();
     console.log(`roles-auth-demo using wallet at ${WALLET_URL}`);
