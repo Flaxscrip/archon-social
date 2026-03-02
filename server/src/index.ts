@@ -315,8 +315,15 @@ async function loginUser(response: string): Promise<any> {
         throw new Error(`Invalid DID: Cannot resolve response DID`);
     }
     
-    const verify = await keymaster.verifyResponse(response, { retries: 10 });
-    console.log(`verifyResponse result:`, JSON.stringify(verify, null, 2));
+    let verify;
+    try {
+        verify = await keymaster.verifyResponse(response, { retries: 10 });
+        console.log(`verifyResponse result:`, JSON.stringify(verify, null, 2));
+    } catch (verifyError: any) {
+        console.error(`verifyResponse FAILED for ${response}:`, verifyError?.message || verifyError);
+        console.error(`Full error:`, JSON.stringify(verifyError, Object.getOwnPropertyNames(verifyError), 2));
+        throw verifyError;
+    }
 
     if (verify.match) {
         const challenge = verify.challenge;
