@@ -1093,6 +1093,8 @@ app.post('/api/credential/request', isAuthenticated, async (req: Request, res: R
             ok: true,
             credentialDid,
             credential,
+            credentialName: user.name,
+            credentialIssuedAt: currentDb.users![userDid].credentialIssuedAt,
             message: user.credentialDid ? 'Credential updated' : 'Credential issued'
         });
     }
