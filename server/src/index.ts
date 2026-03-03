@@ -1166,6 +1166,9 @@ app.listen(HOST_PORT, '0.0.0.0', async () => {
             cipher,
             passphrase,
         });
+        
+        // Load existing wallet (decrypt and restore IDs/aliases)
+        await keymaster.loadWallet();
         console.log(`auth-demo using gatekeeper at ${GATEKEEPER_URL}`);
     }
 
